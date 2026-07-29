@@ -41,7 +41,7 @@
   .btn-toggle{background:#eef1f8;color:var(--ink);border:1px solid var(--border);}
   .btn-toggle.active{background:var(--accent);color:#fff;border-color:var(--accent);}
   .btn-toggle.warn-active{background:var(--bad);color:#fff;border-color:var(--bad);}
-  .btn-reset{background:#ffc107;color:#212529;}
+  .btn-reset{background:#eef1f8;color:var(--sub);}
 
   #tablecard{margin:16px 22px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
   #tablecard .thead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
@@ -120,7 +120,7 @@
 
 <header>
   <div>
-    <h1 id="dashTitle">🏍️ CHAVAN Insurance Dashboard</h1>
+    <h1 id="dashTitle">🏍️ CHAVAN HERO Insurance Dashboard</h1>
     <div class="sub" id="lastLoaded">VEHICLES_BOT</div>
   </div>
   <div class="actions">
@@ -267,7 +267,7 @@ const SOURCE_LABELS = { hero: 'CHAVAN HERO Insurance Dashboard', premia: 'PREMIA
 const SOURCE_ICONS  = { hero: '🏍️', premia: '🏍️' };
 
 const TABLE_COLUMNS_WANT = [
-  'REMARK','Order #','Invoice Date','campaign','Priority','STATUS',
+  'REMARK','Order #','Invoice Date','Priority','STATUS',
   'Contact First Name','Contact Last Name','License Number','Mobile Phone',
   'DSE NAME','VIN','Engine#','Invoice No'
 ];
@@ -421,6 +421,22 @@ function parseDateSafe(v){
   return isNaN(d.getTime()) ? null : d;
 }
 
+// Parses a <input type="date"> value ("YYYY-MM-DD") as a LOCAL date at the
+// given time-of-day, matching how parseDateSafe() builds invoice dates
+// (new Date(year, month-1, day) — also local). Using `new Date("YYYY-MM-DD")`
+// directly would parse it as UTC midnight instead, which silently shifts the
+// comparison window by several hours (e.g. ~5.5h in IST) and can exclude the
+// very day the user selected.
+function parseFilterDate(dateStr, endOfDay){
+  if (!dateStr) return null;
+  const m = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const year = parseInt(m[1], 10), month = parseInt(m[2], 10), day = parseInt(m[3], 10);
+  return endOfDay
+    ? new Date(year, month - 1, day, 23, 59, 59, 999)
+    : new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
 function matchesFilters(row, opts){
   opts = opts || {};
 
@@ -430,8 +446,8 @@ function matchesFilters(row, opts){
   if (dateFrom || dateTo){
     const d = parseDateSafe(row[INVOICE_DATE_KEY]);
     if (!d) return false;
-    if (dateFrom && d < new Date(dateFrom)) return false;
-    if (dateTo && d > new Date(dateTo + 'T23:59:59')) return false;
+    if (dateFrom && d < parseFilterDate(dateFrom, false)) return false;
+    if (dateTo && d > parseFilterDate(dateTo, true)) return false;
   }
 
   if (!opts.excludeStatusToggles){
