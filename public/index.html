@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Vehicles Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* No external dependencies (no CDN scripts) — fully self-contained. */
+  :root{
+    --bg:#f4f6fa; --card:#ffffff; --ink:#1c2333; --sub:#66708a;
+    --accent:#3b5bfd; --accent-soft:#e8ecff; --good:#1aa76a; --warn:#e0a115; --bad:#e14b4b;
+    --border:#e6e9f2;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  header{background:linear-gradient(120deg,#1c2b63,#3b5bfd);color:#fff;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  header h1{margin:0;font-size:19px;font-weight:600;}
+  header .sub{font-size:12px;opacity:.85;margin-top:2px;}
+  header .actions{display:flex;gap:8px;flex-wrap:wrap;}
+  button{cursor:pointer;border:none;border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;transition:.15s;}
+  .btn-light{background:rgba(255,255,255,.15);color:#fff;}
+  .btn-light:hover{background:rgba(255,255,255,.28);}
+  .btn-primary{background:#fff;color:var(--accent);}
+  .btn-primary:hover{background:#eef1ff;}
+
+  .source-switch{display:flex;background:rgba(255,255,255,.15);border-radius:9px;padding:3px;gap:3px;}
+  .btn-source{background:transparent;color:#fff;opacity:.75;padding:7px 16px;border-radius:7px;}
+  .btn-source:hover{opacity:1;}
+  .btn-source.active{background:#fff;color:var(--accent);opacity:1;}
+
+  #kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:18px 22px 0;}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 2px rgba(20,25,50,.04);}
+  .kpi .num{font-size:23px;font-weight:700;}
+  .kpi .lbl{font-size:12px;color:var(--sub);margin-top:2px;}
+  .kpi.warn .num{color:var(--warn);} .kpi.bad .num{color:var(--bad);}
+
+  #controlbar{background:var(--card);margin:16px 22px 0;border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  #controlbar input[type=text]{flex:1;min-width:200px;padding:8px 12px;border-radius:8px;border:1px solid var(--border);font-size:13px;}
+  #controlbar select, #controlbar input[type=date]{padding:8px 10px;border-radius:8px;border:1px solid var(--border);font-size:13px;background:#fff;}
+  .field-lbl{font-size:11px;color:var(--sub);margin-right:-4px;}
+  .btn-toggle{background:#eef1f8;color:var(--ink);border:1px solid var(--border);}
+  .btn-toggle.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn-toggle.warn-active{background:var(--bad);color:#fff;border-color:var(--bad);}
+  .btn-reset{background:#eef1f8;color:var(--sub);}
+
+  #tablecard{margin:16px 22px 0;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+  #tablecard .thead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+  #tablecard .thead h3{margin:0;font-size:14px;}
+  .tbl-scroll{overflow:auto;max-height:560px;border:1px solid var(--border);border-radius:8px;}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;}
+  th{background:#f8f9fd;position:sticky;top:0;cursor:pointer;user-select:none;color:var(--sub);font-weight:600;}
+  th:hover{color:var(--accent);}
+  tbody tr:hover{background:#fafbff;}
+  td.remark-cell input{border:1px solid var(--border);border-radius:6px;padding:5px 7px;font-size:12.5px;width:150px;}
+  td.remark-cell input:focus{outline:2px solid var(--accent-soft);border-color:var(--accent);}
+  .save-flag{font-size:10px;color:var(--good);margin-left:6px;}
+  .badge{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}
+  .badge.high{background:#fdeaea;color:var(--bad);}
+  .badge.medium{background:#fdf3dc;color:var(--warn);}
+  .badge.low{background:#eef1f8;color:var(--sub);}
+  .badge.completed{background:#e5f7ef;color:var(--good);}
+  .pager{display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:10px;font-size:12.5px;}
+  .pager button{background:#eef1f8;color:var(--ink);padding:5px 10px;}
+  .pager select{padding:5px 8px;border-radius:6px;border:1px solid var(--border);}
+
+  #charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;padding:16px 22px 26px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 2px rgba(20,25,50,.04);}
+  .card h3{margin:0 0 10px;font-size:13px;color:var(--sub);font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .barchart{display:flex;flex-direction:column;gap:7px;min-height:180px;justify-content:center;}
+  .barrow{display:grid;grid-template-columns:110px 1fr 34px;align-items:center;gap:8px;cursor:pointer;}
+  .barrow .blabel{font-size:11.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .bartrack{background:#eef0f7;border-radius:5px;height:14px;overflow:hidden;}
+  .barfill{background:#c3cdf7;height:100%;border-radius:5px;transition:width .3s ease, background .2s ease;}
+  .barrow.active .barfill{background:var(--accent);}
+  .barrow.active .blabel{color:var(--accent);font-weight:700;}
+  .barrow:hover .barfill{filter:brightness(0.92);}
+  .barval{font-size:11px;color:var(--sub);text-align:right;}
+  .chart-empty{color:var(--sub);font-size:12px;text-align:center;padding:30px 0;}
+
+  #overlay{position:fixed;inset:0;background:rgba(244,246,250,.96);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;z-index:50;}
+  .spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #overlay .ov-msg{color:var(--sub);font-size:13px;}
+  #overlay .ov-retry{display:none;}
+  #errbox{display:none;margin:16px 22px;padding:12px 16px;background:#fdeaea;color:var(--bad);border-radius:8px;font-size:13px;white-space:pre-wrap;}
+
+  /* --- Login gate --- */
+  #loginScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;}
+  #loginScreen.hidden{display:none;}
+  .login-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px 26px;width:280px;box-shadow:0 4px 18px rgba(20,25,50,.08);}
+  .login-card h2{margin:0 0 4px;font-size:17px;}
+  .login-card p{margin:0 0 16px;font-size:12.5px;color:var(--sub);}
+  .login-card input{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);font-size:13.5px;margin-bottom:10px;}
+  .login-card button{width:100%;background:var(--accent);color:#fff;padding:10px;font-size:13.5px;}
+  .login-err{color:var(--bad);font-size:12px;min-height:16px;margin-top:2px;}
+  #dashboardRoot.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <h2>🔒 Vehicles Dashboard</h2>
+    <p>Contains customer data — enter the dashboard password to continue.</p>
+    <input type="password" id="loginPassword" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin();">
+    <button onclick="doLogin()">Sign in</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<div id="dashboardRoot" class="hidden">
+
+<div id="overlay">
+  <div class="spinner"></div>
+  <div class="ov-msg" id="ovMsg">Loading vehicle data…</div>
+  <button class="btn-primary ov-retry" id="ovRetryBtn" onclick="loadData()">Retry</button>
+</div>
+<div id="errbox"></div>
+
+<header>
+  <div>
+    <h1 id="dashTitle">🏍️ CHAVAN HERO Insurance Dashboard</h1>
+    <div class="sub" id="lastLoaded">VEHICLES_BOT</div>
+  </div>
+  <div class="actions">
+    <div class="source-switch">
+      <button class="btn-source active" id="btnSourceHero" onclick="switchSource('hero')">HERO</button>
+      <button class="btn-source" id="btnSourcePremia" onclick="switchSource('premia')">PREMIA</button>
+    </div>
+    <button class="btn-light" onclick="exportCSV()">Export CSV</button>
+    <button class="btn-primary" onclick="loadData(true)">↻ Refresh</button>
+    <button class="btn-light" onclick="logout()">Log out</button>
+  </div>
+</header>
+
+<div id="kpis"></div>
+
+<div id="controlbar">
+  <input type="text" id="searchBox" placeholder="Search VIN, Order #, Contact, Mobile, License..." oninput="onSearch(this.value)">
+
+  <span class="field-lbl">DSE</span>
+  <select id="dseFilter" onchange="onDseChange(this.value)"><option value="">All DSEs</option></select>
+
+  <span class="field-lbl">Invoice Date</span>
+  <input type="date" id="dateFrom" onchange="onDateChange()">
+  <span class="field-lbl">to</span>
+  <input type="date" id="dateTo" onchange="onDateChange()">
+
+  <button class="btn-toggle" id="btnPending" onclick="togglePending()">Pending</button>
+  <button class="btn-toggle" id="btnPending4" onclick="togglePendingOver4()">Pending &gt; 4 days</button>
+
+  <button class="btn-reset" onclick="resetFilters()">Reset</button>
+</div>
+
+<div id="tablecard">
+  <div class="thead">
+    <h3 id="tblTitle">Vehicles</h3>
+    <div style="font-size:12px;color:var(--sub);">Click a column header to sort · edit REMARK inline (autosaves) · sorted by Priority (High → Completed) by default</div>
+  </div>
+  <div class="tbl-scroll">
+    <table id="dataTable">
+      <thead><tr id="tblHead"></tr></thead>
+      <tbody id="tblBody"></tbody>
+    </table>
+  </div>
+  <div class="pager">
+    <span>Rows per page</span>
+    <select id="pageSizeSel" onchange="pageSize=parseInt(this.value);currentPage=1;renderTable();">
+      <option>25</option><option>50</option><option>100</option><option>250</option>
+    </select>
+    <button onclick="prevPage()">‹ Prev</button>
+    <span id="pageInfo"></span>
+    <button onclick="nextPage()">Next ›</button>
+  </div>
+</div>
+
+<div id="charts"></div>
+
+</div><!-- /dashboardRoot -->
+
+<script>
+// ===========================================================================
+// AUTH — password gate, backed by /api/login. Token stored in localStorage
+// and sent as "Authorization: Bearer <token>" on every /api/* call.
+// ===========================================================================
+const TOKEN_KEY = 'dash_token';
+
+function getToken(){ return localStorage.getItem(TOKEN_KEY); }
+function setToken(t){ localStorage.setItem(TOKEN_KEY, t); }
+function clearToken(){ localStorage.removeItem(TOKEN_KEY); }
+
+async function doLogin(){
+  const pw = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.textContent = '';
+  if (!pw) { errEl.textContent = 'Enter a password.'; return; }
+
+  try {
+    const resp = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    const data = await resp.json();
+    if (!resp.ok) { errEl.textContent = data.error || 'Login failed.'; return; }
+    setToken(data.token);
+    enterDashboard();
+  } catch (e) {
+    errEl.textContent = 'Network error: ' + e.message;
+  }
+}
+
+function logout(){
+  clearToken();
+  document.getElementById('dashboardRoot').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('loginPassword').value = '';
+}
+
+function enterDashboard(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('dashboardRoot').classList.remove('hidden');
+  loadData();
+}
+
+// ===========================================================================
+// GLOBAL SAFETY NET — never let a stray error leave the overlay stuck.
+// ===========================================================================
+window.onerror = function(msg, url, line){
+  hideOverlay();
+  showError('Unexpected error: ' + msg + ' (line ' + line + ')');
+  return false;
+};
+function hideOverlay(){ const ov=document.getElementById('overlay'); if(ov) ov.style.display='none'; }
+function showOverlay(msg){
+  const ov=document.getElementById('overlay');
+  document.getElementById('ovMsg').textContent = msg || 'Loading vehicle data…';
+  document.getElementById('ovRetryBtn').style.display='none';
+  if(ov) ov.style.display='flex';
+}
+function showError(msg){ const b=document.getElementById('errbox'); b.style.display='block'; b.textContent=msg; }
+function clearError(){ const b=document.getElementById('errbox'); b.style.display='none'; b.textContent=''; }
+
+// ---------------------------------------------------------------------
+// STATE
+// ---------------------------------------------------------------------
+let HEADERS = [];
+let RAW_ROWS = [];
+let TABLE_COLUMNS = [];
+let DSE_KEY, MODEL_KEY, STATUS_KEY, PRIORITY_KEY, REMARK_KEY, INVOICE_DATE_KEY;
+
+let selectedDSE = '';
+let selectedModel = '';
+let dateFrom = '', dateTo = '';
+let searchText = '';
+let pendingOnly = false;
+let pendingOver4Days = false;
+
+let sortState = { col: null, dir: 1 }; // col=null -> default Priority sort
+let currentPage = 1;
+let pageSize = 25;
+let loadTimeoutId = null;
+let currentSource = 'hero'; // 'hero' | 'premia' — which sheet is currently shown
+
+const SOURCE_LABELS = { hero: 'CHAVAN HERO Insurance Dashboard', premia: 'PREMIA Insurance Dashboard' };
+const SOURCE_ICONS  = { hero: '🏍️', premia: '🏍️' };
+
+const TABLE_COLUMNS_WANT = [
+  'REMARK','Order #','Invoice Date','Priority','STATUS',
+  'Contact First Name','Contact Last Name','License Number','Mobile Phone',
+  'DSE NAME','VIN','Engine#','Invoice No'
+];
+
+// ---------------------------------------------------------------------
+// LOAD (now via fetch to /api/data instead of google.script.run)
+// ---------------------------------------------------------------------
+function switchSource(src){
+  if (src === currentSource) return;
+  currentSource = src;
+  document.getElementById('btnSourceHero').classList.toggle('active', src === 'hero');
+  document.getElementById('btnSourcePremia').classList.toggle('active', src === 'premia');
+  document.getElementById('dashTitle').textContent = SOURCE_ICONS[src] + ' ' + SOURCE_LABELS[src];
+  loadData();
+}
+
+async function loadData(forceRefresh){
+  clearError();
+  showOverlay('Loading vehicle data…');
+  if (loadTimeoutId) clearTimeout(loadTimeoutId);
+  loadTimeoutId = setTimeout(function(){
+    document.getElementById('ovMsg').textContent = 'Still working… this is taking longer than expected.';
+    document.getElementById('ovRetryBtn').style.display = 'inline-block';
+  }, 20000);
+
+  try {
+    const params = new URLSearchParams({ source: currentSource });
+    if (forceRefresh) params.set('refresh', '1');
+    const url = '/api/data?' + params.toString();
+    const resp = await fetch(url, {
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    });
+
+    if (resp.status === 401) {
+      if (loadTimeoutId) clearTimeout(loadTimeoutId);
+      hideOverlay();
+      logout();
+      return;
+    }
+
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Failed to load data');
+    onDataLoaded(data);
+  } catch (err) {
+    if (loadTimeoutId) clearTimeout(loadTimeoutId);
+    hideOverlay();
+    showError('Failed to load data: ' + err.message);
+  }
+}
+
+// Case-insensitive header resolver — protects against header text casing
+// differing slightly from what the UI expects (e.g. "Remark" vs "REMARK").
+function findHeaderKey(want){
+  const wantLower = want.toLowerCase();
+  return HEADERS.find(h => h.toLowerCase() === wantLower) || want;
+}
+
+// ---------------------------------------------------------------------
+// Server sends rows as compact arrays (not {col: val} objects) to avoid
+// repeating every column name on all 20k+ rows over the wire. This helper
+// rebuilds the row-objects the rest of the app expects, in one fast
+// client-side pass.
+// ---------------------------------------------------------------------
+function rowsToObjects(headers, rowArrays){
+  const n = headers.length;
+  const out = new Array(rowArrays.length);
+  for (let r = 0; r < rowArrays.length; r++){
+    const arr = rowArrays[r];
+    const obj = {};
+    for (let i = 0; i < n; i++){ obj[headers[i]] = arr[i]; }
+    obj['_row'] = arr[n];
+    out[r] = obj;
+  }
+  return out;
+}
+
+function onDataLoaded(data){
+  if (loadTimeoutId) clearTimeout(loadTimeoutId);
+  try {
+    HEADERS = (data && data.headers) || [];
+    const rowArrays = (data && data.rows) || [];
+    RAW_ROWS = rowsToObjects(HEADERS, rowArrays);
+
+    DSE_KEY = findHeaderKey('DSE NAME');
+    MODEL_KEY = findHeaderKey('Model');
+    STATUS_KEY = findHeaderKey('STATUS');
+    PRIORITY_KEY = findHeaderKey('Priority');
+    REMARK_KEY = findHeaderKey('REMARK');
+    INVOICE_DATE_KEY = findHeaderKey('Invoice Date');
+    TABLE_COLUMNS = TABLE_COLUMNS_WANT.map(findHeaderKey);
+
+    // reset filters on a fresh load
+    selectedDSE=''; selectedModel=''; dateFrom=''; dateTo=''; searchText='';
+    pendingOnly=false; pendingOver4Days=false;
+    document.getElementById('searchBox').value='';
+    document.getElementById('dateFrom').value='';
+    document.getElementById('dateTo').value='';
+    sortState = { col:null, dir:1 };
+    currentPage = 1;
+
+    document.getElementById('lastLoaded').textContent =
+      currentSource.toUpperCase() + ' · VEHICLES_BOT · ' + RAW_ROWS.length + ' vehicles · loaded ' + new Date().toLocaleTimeString();
+
+    buildDseDropdown();
+    renderAll();
+  } catch (e){
+    showError('Rendering error: ' + e.message);
+  } finally {
+    hideOverlay();
+  }
+}
+
+function buildDseDropdown(){
+  const sel = document.getElementById('dseFilter');
+  const unique = Array.from(new Set(RAW_ROWS.map(r=>String(r[DSE_KEY]||'').trim()).filter(Boolean))).sort();
+  sel.innerHTML = '<option value="">All DSEs</option>' + unique.map(v=>`<option value="${escAttr(v)}">${escHtml(v)}</option>`).join('');
+  sel.value = selectedDSE;
+}
+
+// ---------------------------------------------------------------------
+// FILTER LOGIC
+// ---------------------------------------------------------------------
+function parseDateSafe(v){
+  if (!v) return null;
+  if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+
+  const s = String(v).trim();
+  if (!s) return null;
+
+  // Sheet dates come through as DD/MM/YYYY (e.g. "20/07/2026") — parse this
+  // explicitly rather than via `new Date(s)`, which reads ambiguous slash
+  // dates as MM/DD/YYYY and silently returns "Invalid Date" whenever the
+  // day is > 12.
+  let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m){
+    const day = parseInt(m[1], 10), month = parseInt(m[2], 10), year = parseInt(m[3], 10);
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const d = new Date(year, month - 1, day);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // ISO format (YYYY-MM-DD), e.g. from the <input type="date"> filters — safe
+  // to parse natively since it's unambiguous.
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)){
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // Fallback for any other format.
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function matchesFilters(row, opts){
+  opts = opts || {};
+
+  if (opts.excludeField !== 'dse' && selectedDSE && String(row[DSE_KEY]||'').trim() !== selectedDSE) return false;
+  if (opts.excludeField !== 'model' && selectedModel && String(row[MODEL_KEY]||'').trim() !== selectedModel) return false;
+
+  if (dateFrom || dateTo){
+    const d = parseDateSafe(row[INVOICE_DATE_KEY]);
+    if (!d) return false;
+    if (dateFrom && d < new Date(dateFrom)) return false;
+    if (dateTo && d > new Date(dateTo + 'T23:59:59')) return false;
+  }
+
+  if (!opts.excludeStatusToggles){
+    if (pendingOnly){
+      const st = String(row[STATUS_KEY]||'').toLowerCase();
+      if (!st.includes('pending')) return false;
+    }
+    if (pendingOver4Days){
+      const st = String(row[STATUS_KEY]||'').toLowerCase();
+      if (!st.includes('pending')) return false;
+      const d = parseDateSafe(row[INVOICE_DATE_KEY]);
+      if (!d) return false;
+      if ((Date.now() - d.getTime()) / (1000*3600*24) <= 4) return false;
+    }
+  }
+
+  if (searchText){
+    const hay = [row['VIN'], row['Order #'], row['Contact First Name'], row['Contact Last Name'],
+                 row['Mobile Phone'], row['License Number']].join(' ').toLowerCase();
+    if (!hay.includes(searchText.toLowerCase())) return false;
+  }
+  return true;
+}
+
+function getFilteredRows(opts){ return RAW_ROWS.filter(r => matchesFilters(r, opts)); }
+
+function onDseChange(v){ selectedDSE = v; currentPage=1; renderAll(); }
+function onDateChange(){
+  dateFrom = document.getElementById('dateFrom').value;
+  dateTo = document.getElementById('dateTo').value;
+  currentPage=1; renderAll();
+}
+function onSearch(v){ searchText = v; currentPage=1; renderAll(); }
+
+function togglePending(){
+  pendingOnly = !pendingOnly;
+  currentPage=1; renderAll();
+}
+function togglePendingOver4(){
+  pendingOver4Days = !pendingOver4Days;
+  currentPage=1; renderAll();
+}
+
+function resetFilters(){
+  selectedDSE=''; selectedModel=''; dateFrom=''; dateTo=''; searchText='';
+  pendingOnly=false; pendingOver4Days=false;
+  document.getElementById('searchBox').value='';
+  document.getElementById('dateFrom').value='';
+  document.getElementById('dateTo').value='';
+  document.getElementById('dseFilter').value='';
+  currentPage=1;
+  renderAll();
+}
+
+function safeRender(name, fn){
+  try { fn(); }
+  catch (e){
+    console.error('[' + name + '] render failed:', e);
+    showError((document.getElementById('errbox').textContent ? document.getElementById('errbox').textContent + '\n' : '') +
+      name + ' failed to render: ' + e.message);
+  }
+}
+
+function renderAll(){
+  safeRender('Controls', renderControlStates);
+  safeRender('KPIs', renderKPIs);
+  safeRender('Table', renderTable);
+  safeRender('Charts', renderCharts);
+}
+
+function renderControlStates(){
+  document.getElementById('btnPending').classList.toggle('active', pendingOnly);
+  document.getElementById('btnPending4').classList.toggle('warn-active', pendingOver4Days);
+
+  const baseRows = getFilteredRows({ excludeStatusToggles:true });
+  const pendingCount = baseRows.filter(r=>String(r[STATUS_KEY]||'').toLowerCase().includes('pending')).length;
+  const pendingOver4Count = baseRows.filter(r=>{
+    const st = String(r[STATUS_KEY]||'').toLowerCase();
+    if (!st.includes('pending')) return false;
+    const d = parseDateSafe(r[INVOICE_DATE_KEY]);
+    if (!d) return false;
+    return (Date.now() - d.getTime())/(1000*3600*24) > 4;
+  }).length;
+
+  document.getElementById('btnPending').textContent = 'Pending (' + pendingCount + ')';
+  document.getElementById('btnPending4').textContent = 'Pending > 4 days (' + pendingOver4Count + ')';
+}
+
+// ---------------------------------------------------------------------
+// KPIs
+// ---------------------------------------------------------------------
+function renderKPIs(){
+  const rows = getFilteredRows({});
+  const now = new Date();
+  const in30 = new Date(now.getTime() + 30*24*3600*1000);
+
+  let pending=0, pendingOver4=0, highPriority=0, expiringSoon=0;
+
+  rows.forEach(r=>{
+    const st = String(r[STATUS_KEY]||'').toLowerCase();
+    if (st.includes('pending')){
+      pending++;
+      const d = parseDateSafe(r[INVOICE_DATE_KEY]);
+      if (d && (now-d)/(1000*3600*24) > 4) pendingOver4++;
+    }
+    if (String(r[PRIORITY_KEY]||'').trim().toLowerCase() === 'high') highPriority++;
+    const exp = parseDateSafe(r['Insurance Expiry Date']);
+    if (exp && exp>=now && exp<=in30) expiringSoon++;
+  });
+
+  const kpis = [
+    { num: rows.length, lbl: 'Vehicles (filtered)', cls:'' },
+    { num: pending, lbl: 'Pending', cls:'warn' },
+    { num: pendingOver4, lbl: 'Pending > 4 Days', cls:'bad' },
+    { num: highPriority, lbl: 'High Priority', cls:'warn' },
+    { num: expiringSoon, lbl: 'Insurance Expiring ≤30d', cls:'warn' }
+  ];
+
+  document.getElementById('kpis').innerHTML = kpis.map(k =>
+    `<div class="kpi ${k.cls}"><div class="num">${k.num}</div><div class="lbl">${k.lbl}</div></div>`
+  ).join('');
+}
+
+// ---------------------------------------------------------------------
+// TABLE — default sort: Priority High -> Medium -> Low -> other -> Completed
+// ---------------------------------------------------------------------
+function priorityRank(val){
+  const v = String(val||'').trim().toLowerCase();
+  if (v === 'high') return 0;
+  if (v === 'medium') return 1;
+  if (v === 'low') return 2;
+  if (v === '') return 4;
+  if (v === 'completed') return 5;
+  return 3; // any other value sits between "low" and blank
+}
+
+function priorityBadge(val){
+  const v = String(val||'').trim().toLowerCase();
+  if (!v) return '';
+  const cls = (v==='high'||v==='medium'||v==='low'||v==='completed') ? v : 'low';
+  return `<span class="badge ${cls}">${escHtml(val)}</span>`;
+}
+
+function currentComparator(){
+  if (sortState.col === null || sortState.col === PRIORITY_KEY){
+    const dir = sortState.col === PRIORITY_KEY ? sortState.dir : 1;
+    return (a,b) => (priorityRank(a[PRIORITY_KEY]) - priorityRank(b[PRIORITY_KEY])) * dir;
+  }
+  const col = sortState.col, dir = sortState.dir;
+  return (a,b)=>{
+    const av=a[col], bv=b[col];
+    if (av===bv) return 0;
+    return (av>bv?1:-1)*dir;
+  };
+}
+
+function renderTable(){
+  let rows = getFilteredRows({});
+  rows = rows.slice().sort(currentComparator());
+
+  document.getElementById('tblTitle').textContent = 'Vehicles (' + rows.length + ' matching)';
+
+  const head = document.getElementById('tblHead');
+  head.innerHTML = TABLE_COLUMNS.map(c=>{
+    const isDefaultSort = (sortState.col===null && c===PRIORITY_KEY) || sortState.col===c;
+    const dir = sortState.col===c ? sortState.dir : 1;
+    const arrow = isDefaultSort ? (dir===1?' ▲':' ▼') : '';
+    return `<th onclick="sortBy('${escAttr(c)}')">${escHtml(c)}${arrow}</th>`;
+  }).join('');
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  currentPage = Math.min(currentPage, totalPages);
+  const start = (currentPage-1)*pageSize;
+  const pageRows = rows.slice(start, start+pageSize);
+
+  const body = document.getElementById('tblBody');
+  body.innerHTML = pageRows.map(r=>{
+    const cells = TABLE_COLUMNS.map(c=>{
+      if (c === REMARK_KEY){
+        return `<td class="remark-cell">
+          <input value="${escAttr(r[REMARK_KEY]||'')}"
+                 data-vin="${escAttr(r['VIN']||'')}"
+                 data-row="${r['_row']}"
+                 onkeydown="if(event.key==='Enter'){this.blur();}"
+                 onblur="saveRemark(this)">
+          <span class="save-flag" id="flag-${escAttr(r['VIN']||'')}"></span>
+        </td>`;
+      }
+      if (c === PRIORITY_KEY){
+        return `<td>${priorityBadge(r[c])}</td>`;
+      }
+      return `<td>${escHtml(r[c] || '')}</td>`;
+    }).join('');
+    return `<tr>${cells}</tr>`;
+  }).join('') || '<tr><td colspan="'+TABLE_COLUMNS.length+'" style="text-align:center;color:var(--sub);padding:20px;">No matching vehicles</td></tr>';
+
+  document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+}
+
+function sortBy(col){
+  if (sortState.col === col) sortState.dir *= -1;
+  else { sortState.col = col; sortState.dir = 1; }
+  renderTable();
+}
+
+function prevPage(){ if (currentPage>1){ currentPage--; renderTable(); } }
+function nextPage(){ currentPage++; renderTable(); }
+
+// ---------------------------------------------------------------------
+// SAVE REMARK (only editable field) — now via fetch to /api/update-remark
+// ---------------------------------------------------------------------
+async function saveRemark(input){
+  const vin = input.getAttribute('data-vin');
+  const rowHint = parseInt(input.getAttribute('data-row'), 10);
+  const value = input.value;
+  const flagId = 'flag-' + vin;
+  const fl = document.getElementById(flagId);
+
+  try {
+    const resp = await fetch('/api/update-remark', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + getToken()
+      },
+      body: JSON.stringify({ vin, rowHint, remark: value, source: currentSource })
+    });
+
+    if (resp.status === 401) { logout(); return; }
+
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || 'Save failed');
+
+    const rowObj = RAW_ROWS.find(r=>String(r['VIN'])===String(vin));
+    if (rowObj) rowObj[REMARK_KEY] = value;
+    if (fl){ fl.style.color='var(--good)'; fl.textContent = '✓ saved'; setTimeout(()=>{ if(fl) fl.textContent=''; }, 1500); }
+  } catch (err) {
+    if (fl){ fl.textContent = '⚠ ' + err.message; fl.style.color = 'var(--bad)'; }
+  }
+}
+
+// ---------------------------------------------------------------------
+// CHARTS — DSE Name distribution & Model distribution only
+// ---------------------------------------------------------------------
+function renderBarChart(containerId, entries, activeVal, onClickField){
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (entries.length === 0){
+    el.innerHTML = '<div class="chart-empty">No data for current filters</div>';
+    return;
+  }
+  const maxVal = entries[0][1];
+  el.innerHTML = entries.map(([val,cnt])=>{
+    const pct = maxVal>0 ? Math.max(4, Math.round((cnt/maxVal)*100)) : 0;
+    const isActive = val === activeVal;
+    return `
+      <div class="barrow ${isActive?'active':''}" onclick="onChartClick('${onClickField}','${escAttr(val)}')" title="${escAttr(val)}">
+        <div class="blabel">${escHtml(val)}</div>
+        <div class="bartrack"><div class="barfill" style="width:${pct}%"></div></div>
+        <div class="barval">${cnt}</div>
+      </div>`;
+  }).join('');
+}
+
+function onChartClick(field, val){
+  if (field === 'dse'){
+    selectedDSE = (selectedDSE === val) ? '' : val;
+    document.getElementById('dseFilter').value = selectedDSE;
+  } else if (field === 'model'){
+    selectedModel = (selectedModel === val) ? '' : val;
+  }
+  currentPage = 1;
+  renderAll();
+}
+
+function topEntries(rows, key, limit){
+  const counts = {};
+  rows.forEach(r=>{
+    const v = String(r[key]||'').trim();
+    if (!v) return;
+    counts[v] = (counts[v]||0)+1;
+  });
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0, limit || 8);
+}
+
+function renderCharts(){
+  const container = document.getElementById('charts');
+  if (container.children.length === 0){
+    container.innerHTML = `
+      <div class="card"><h3>DSE Name distribution</h3><div class="barchart" id="chart-dse"></div></div>
+      <div class="card"><h3>Model distribution</h3><div class="barchart" id="chart-model"></div></div>
+    `;
+  }
+  renderBarChart('chart-dse', topEntries(getFilteredRows({excludeField:'dse'}), DSE_KEY), selectedDSE, 'dse');
+  renderBarChart('chart-model', topEntries(getFilteredRows({excludeField:'model'}), MODEL_KEY), selectedModel, 'model');
+}
+
+// ---------------------------------------------------------------------
+// CSV EXPORT (current filtered view)
+// ---------------------------------------------------------------------
+function exportCSV(){
+  const rows = getFilteredRows({}).slice().sort(currentComparator());
+  const cols = TABLE_COLUMNS;
+  const esc = v => '"' + String(v==null?'':v).replace(/"/g,'""') + '"';
+  const lines = [cols.map(esc).join(',')];
+  rows.forEach(r=> lines.push(cols.map(c=>esc(r[c])).join(',')));
+  const blob = new Blob([lines.join('\n')], { type:'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = currentSource + '_vehicles_filtered.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---------------------------------------------------------------------
+// UTIL
+// ---------------------------------------------------------------------
+function escHtml(v){ return String(v).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function escAttr(v){ return String(v).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+// ---------------------------------------------------------------------
+// INIT — runs last, after every function/variable above is declared.
+// If we already have a token from a previous session, skip straight in.
+// (If it's expired, the first API call will 401 and bounce back to login.)
+// ---------------------------------------------------------------------
+if (getToken()) { enterDashboard(); }
+</script>
+</body>
+</html>

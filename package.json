@@ -1,0 +1,12 @@
+{
+  "name": "hero-vehicles-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vehicles insurance dashboard backed directly by Google Sheets API (no Apps Script).",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "googleapis": "^140.0.1"
+  }
+}
