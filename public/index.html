@@ -715,7 +715,7 @@
 
     const TABLE_COLUMNS_WANT = [
       'REMARK', 'DSE NAME', 'Invoice Date', 'campaign', 'Priority', 'INSURANCE STATUS',
-      'Contact First Name', 'Contact Last Name', 'License Number', 'Mobile Phone',
+      'Contact First Name', 'Contact Last Name', 'License Number',
       'VIN', 'Engine#', 'Invoice No'
     ];
 
@@ -913,7 +913,7 @@
 
       if (searchText) {
         const hay = [row['VIN'], row['Order #'], row['Contact First Name'], row['Contact Last Name'],
-        row['Mobile Phone'], row['License Number']].join(' ').toLowerCase();
+        row['License Number']].join(' ').toLowerCase();
         if (!hay.includes(searchText.toLowerCase())) return false;
       }
       return true;
